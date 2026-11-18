@@ -5860,6 +5860,8 @@ async def process_endpoint(
     acknowledged: Optional[str] = Form(None),
     output_format: Optional[str] = Form(None),
     layouts: Optional[str] = Form(None),
+    source_language: Optional[str] = Form(None),
+    subtitle_script: Optional[str] = Form(None),
     force_low_quality: Optional[str] = Form(None),
     webhook_url: Optional[str] = Form(None),
     webhook_secret: Optional[str] = Form(None),
@@ -5895,6 +5897,8 @@ async def process_endpoint(
         force_low = bool(body.get("force_low_quality"))
         output_format = body.get("output_format")
         layouts = body.get("layouts")
+        source_language = body.get("source_language")
+        subtitle_script = body.get("subtitle_script")
         webhook_url = body.get("webhook_url")
         webhook_secret = body.get("webhook_secret")
         target_clips = body.get("target_clips")
@@ -5908,6 +5912,14 @@ async def process_endpoint(
         max_minutes = body.get("max_minutes")
         source_start = body.get("source_start")
         source_end = body.get("source_end")
+
+    from transcript_language import transcription_env
+    try:
+        speech_env = transcription_env(source_language, subtitle_script)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if subtitle_script == "hinglish" and not llm_backend.active():
+        raise HTTPException(status_code=400, detail="Hinglish subtitles need a configured local LLM.")
 
     # Normalize output format (auto = keep pipeline default).
     if output_format not in ("vertical", "horizontal", "square"):
@@ -6002,6 +6014,7 @@ async def process_endpoint(
     # Optional layouts are per job. The renderer reads these at import time in
     # the subprocess, so they must be set before Popen — same path WATERMARK
     # already takes.
+    env.update(speech_env)
     chosen = layout_env(layouts)
     env.update(chosen)
     if chosen:

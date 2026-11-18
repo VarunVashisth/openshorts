@@ -67,6 +67,12 @@ export default function MediaInput({ onProcess, isProcessing }) {
     const [layout, setLayout] = useState(() => {
         try { return localStorage.getItem('os_layout') || 'auto'; } catch { return 'auto'; }
     });
+    const [sourceLanguage, setSourceLanguage] = useState(() => {
+        try { return localStorage.getItem('os_source_language') || 'auto'; } catch { return 'auto'; }
+    });
+    const [subtitleScript, setSubtitleScript] = useState(() => {
+        try { return localStorage.getItem('os_subtitle_script') || 'original'; } catch { return 'original'; }
+    });
     const infoRef = useRef(null);
 
     // Close the compatibility popover on any outside click.
@@ -130,6 +136,8 @@ export default function MediaInput({ onProcess, isProcessing }) {
             autoHook,
             autoHookStyle,
             layout,
+            sourceLanguage,
+            subtitleScript,
             sourceStart: range ? Math.round(range.start) : null,
             sourceEnd: range ? Math.round(range.end) : null,
         };
@@ -137,6 +145,8 @@ export default function MediaInput({ onProcess, isProcessing }) {
             localStorage.setItem('os_auto_hook', autoHook ? '1' : '0');
             localStorage.setItem('os_auto_hook_style_v2', autoHookStyle);
             localStorage.setItem('os_layout', layout);
+            localStorage.setItem('os_source_language', sourceLanguage);
+            localStorage.setItem('os_subtitle_script', subtitleScript);
         } catch { /* ignore */ }
         if (mode === 'url' && url) {
             onProcess({ type: 'url', payload: url, acknowledged: true, outputFormat, ...advanced });
@@ -357,6 +367,33 @@ export default function MediaInput({ onProcess, isProcessing }) {
                                 Targets, not guarantees: the AI returns fewer clips when the
                                 material doesn't hold them. Leave blank to let it decide.
                                 {plan === 'free' && ` The free plan makes the ${FREE_CLIPS_PER_VIDEO} to ${FREE_CLIPS_QUIET} best clips of each video, fewer while its queue is busy; plans get every clip, up to ${MAX_CLIPS_PER_VIDEO}.`}
+                            </p>
+                            <label className="col-span-1 text-xs text-ink2">
+                                Spoken language
+                                <select className="input-field mt-1" aria-label="Spoken language"
+                                    value={sourceLanguage} onChange={(e) => {
+                                        setSourceLanguage(e.target.value);
+                                        if (e.target.value === 'en') setSubtitleScript('original');
+                                    }}>
+                                    <option value="auto">Auto detect</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="en">English</option>
+                                    <option value="ur">Urdu</option>
+                                </select>
+                            </label>
+                            <label className="col-span-1 sm:col-span-2 text-xs text-ink2">
+                                Subtitle writing
+                                <select className="input-field mt-1" aria-label="Subtitle writing"
+                                    value={subtitleScript} onChange={(e) => {
+                                        setSubtitleScript(e.target.value);
+                                        if (e.target.value === 'hinglish' && !['hi', 'ur'].includes(sourceLanguage)) setSourceLanguage('hi');
+                                    }}>
+                                    <option value="original">Original script</option>
+                                    <option value="hinglish">Hinglish (Latin letters, local LLM)</option>
+                                </select>
+                            </label>
+                            <p className="col-span-1 sm:col-span-3 text-[11px] text-muted">
+                                For Hindi mistaken as Urdu, select Hindi. Hinglish keeps the spoken Hindi in Latin letters; it does not translate to English.
                             </p>
                             <div className="col-span-1 sm:col-span-3 flex flex-wrap items-center justify-between gap-3 pt-3 sm:pt-1 border-t border-rule">
                                 <span className="text-xs text-ink2">vertical layout</span>

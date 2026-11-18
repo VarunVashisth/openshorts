@@ -224,6 +224,10 @@ def run_whisper_transcription(media_path, **params):
     models, so a job must degrade instead of dying when VRAM runs out.
     """
     global _whisper_model, _whisper_force_cpu
+    from transcript_language import requested_language
+    language = requested_language()
+    if language:
+        params.setdefault("language", language)
     try:
         return _run_whisper_once(media_path, **params)
     except RuntimeError as e:
@@ -237,6 +241,7 @@ def run_whisper_transcription(media_path, **params):
 
 
 def _transcribe_with_whisper(media_path):
+    from transcript_language import requested_language
     segments, info = run_whisper_transcription(media_path, **WHISPER_TRANSCRIBE_PARAMS)
 
     out_segments = []
@@ -257,6 +262,7 @@ def _transcribe_with_whisper(media_path):
     return {
         "text": " ".join(part for part in text_parts if part),
         "language": info.language,
+        "requested_language": requested_language(),
         "segments": out_segments,
     }
 

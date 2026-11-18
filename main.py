@@ -2974,6 +2974,11 @@ if __name__ == '__main__':
             if transcript is not None:
                 transcript_from_cache = True
                 save_transcript_checkpoint(output_dir, transcript, input_video, duration)
+        from transcript_language import language_matches, romanize_hindi
+        if transcript is not None and not language_matches(transcript):
+            print("🔤 Cached transcript has another language — transcribing with the selected language.")
+            transcript = None
+            transcript_from_cache = False
         if transcript is None:
             try:
                 transcript = transcribe_video(input_video)
@@ -2984,6 +2989,9 @@ if __name__ == '__main__':
             # Kept only when this job's source is the cached file, uncut.
             import source_cache
             source_cache.store_transcript(args.url, duration, transcript, input_video)
+
+        if transcript is not None:
+            transcript = romanize_hindi(transcript)
 
         # Music-only or wordless footage transcribes to a handful of words.
         # Clip it by what is on screen instead, like a video with no audio.

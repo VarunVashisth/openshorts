@@ -72,3 +72,25 @@ silently). Self-host `/api/process` then accepts a request without
 `X-Gemini-Key` and `/api/config.localLlm` tells the dashboard not to demand one.
 Frame-based stages (`layout_picker`, `screencast_layout`, `get_visual_clips`)
 stay on Gemini. Never wired in cloud mode: `BILLING_ENABLED` ignores it.
+
+### Speech language and Hinglish
+
+`/api/process` accepts `source_language` (`auto`, `hi`, `en`, `ur`) and
+`subtitle_script` (`original`, `hinglish`), for either JSON or multipart uploads.
+The dashboard exposes these under Advanced options. Hinglish with automatic
+language detection selects Hindi explicitly. `WHISPER_LANGUAGE` is forwarded to
+Whisper; an older cached transcript without the same requested-language marker
+is discarded when a language is forced. The shared source cache keeps the raw
+transcript, not a romanized version.
+
+`transcript_language.romanize_hindi` uses the configured local LLM to romanize
+Hindi/Urdu tokens into Latin letters after ASR models are released. It keeps
+word and segment timestamps in Python and aligns responses by unique word ID.
+Requests use 16-token batches with an exact output-count schema. Malformed
+batches retry, then split recursively; a single-token fallback requests only
+text, without a model-generated ID. Duplicate/missing IDs and output still
+written in Devanagari or Arabic script are rejected. Server/connectivity errors
+propagate without recursive retries.
+English words stay unchanged. `SUBTITLE_SCRIPT=hinglish` enables this for CLI
+runs too. It is transliteration, not English translation. Existing completed
+jobs and burned captions do not change; generate a new job with the new options.
